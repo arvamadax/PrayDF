@@ -1,0 +1,12 @@
+{
+  "name": "praydf",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "vendor": "node vendor.mjs"
+  },
+  "dependencies": {
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.5.438"
+  }
+}
