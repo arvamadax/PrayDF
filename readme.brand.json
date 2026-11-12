@@ -1,0 +1,33 @@
+{
+  "src": "docs/src",
+  "out": "docs/assets/md",
+  "docs": {
+    "README.md": "README.md"
+  },
+  "width": 1280,
+  "padding": 56,
+  "radius": 24,
+  "colors": {
+    "ink": "#1e1b3a",
+    "paper": "#f8f8fc",
+    "muted": "#575c6b",
+    "line": "#e2e3ee",
+    "accent": "#4f46e5",
+    "accent_text": "#4338ca",
+    "card": "#ffffff",
+    "row_alt": "#f3f3fa",
+    "code_bg": "#1e1b3a",
+    "code_text": "#f1f1f8",
+    "code_comment": "#9aa3b8"
+  },
+  "fonts": {
+    "sans": { "family": "Inter", "file": "brand/fonts/Inter-400.woff2", "weight": "400" },
+    "sans_bold": { "family": "Inter", "file": "brand/fonts/Inter-700.woff2", "weight": "600 700" },
+    "mono": { "family": "JetBrains Mono", "file": "brand/fonts/JetBrainsMono-400.woff2" }
+  },
+  "metrics": { "sans": 0.565, "sans_bold": 0.59, "mono": 0.6 },
+  "logo": {
+    "svg": "<g transform=\"scale(0.109375)\"><rect width=\"256\" height=\"256\" rx=\"56\" fill=\"{accent}\"/><path d=\"M68 28 H168 L212 72 V218 A12 12 0 0 1 200 230 H68 A12 12 0 0 1 56 218 V40 A12 12 0 0 1 68 28 Z\" fill=\"#ffffff\"/><path d=\"M168 28 V60 A12 12 0 0 0 180 72 H212 Z\" fill=\"#c7d2fe\"/><path fill=\"{accent}\" fill-rule=\"evenodd\" d=\"M84 76 H146 A44 44 0 0 1 146 164 H120 V204 H84 Z M120 106 V134 H144 A14 14 0 0 0 144 106 Z\"/></g>",
+    "wordmark": "PrayDF"
+  }
+}
