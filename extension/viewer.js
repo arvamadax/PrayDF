@@ -303,11 +303,12 @@ $("openApp").onclick = async () => {
   const url = URL.createObjectURL(file);
   btn.disabled = true;
   try {
-    const id = await chrome.downloads.download({ url, filename: "PrayDF/" + file.name, conflictAction: "uniquify", saveAs: false });
+    const api = globalThis.browser ?? chrome; // Firefox: promise-based browser.*; Chromium: chrome.*
+    const id = await api.downloads.download({ url, filename: "PrayDF/" + file.name, conflictAction: "uniquify", saveAs: false });
     let path = null;
     // shortcut: polls for up to 10 s instead of listening to downloads.onChanged; fine for a local blob
     for (let i = 0; i < 100 && !path; i++) {
-      const [item] = await chrome.downloads.search({ id });
+      const [item] = await api.downloads.search({ id });
       if (item?.state === "interrupted") throw new Error(item.error || "unduhan gagal");
       if (item?.state === "complete") path = item.filename;
       else await new Promise((ok) => setTimeout(ok, 100));

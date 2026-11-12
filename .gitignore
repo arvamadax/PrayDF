@@ -2,3 +2,4 @@ node_modules/
 extension/lib/
 native/target/
 native/pdfium/
+promo/

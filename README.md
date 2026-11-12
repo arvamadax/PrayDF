@@ -18,6 +18,15 @@ Ambil versi siap pakai di halaman [Releases](../../releases/latest):
 
 Setelah mengubah kode, klik tombol reload pada kartu extension di `brave://extensions`.
 
+### Browser lain
+
+| Browser | Cara memuat |
+|---|---|
+| Chrome, Edge, Opera, Vivaldi | Sama seperti Brave: buka halaman extensions (`chrome://extensions`, `edge://extensions`, …), nyalakan Developer mode, **Load unpacked**, pilih folder extension |
+| Firefox 128+ | Buka `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → pilih `manifest.json`. Lalu di `about:addons` → PrayDF → Permissions, izinkan akses semua situs (Firefox menjadikannya opsional) agar tab PDF bisa dialihkan |
+
+Di Firefox, add-on sementara hilang saat browser ditutup; pemasangan permanen perlu ditandatangani lewat addons.mozilla.org. Safari belum didukung.
+
 Tab yang menerima PDF (misalnya tombol **Cetak** di Google Classroom, atau link PDF biasa) otomatis dibuka di viewer PrayDF, seperti viewer PDF bawaan Chrome. PDF yang dibuka lewat alamat `blob:` atau dari disk (`file://`) belum ikut dialihkan.
 
 ## Format
