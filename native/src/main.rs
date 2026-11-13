@@ -1137,15 +1137,29 @@ fn reg_set(key: &str, name: &str, val: &str) -> Result<(), String> {
     }
 }
 
+fn reg_del_value(key: &str, name: &str) -> Result<(), String> {
+    let (k, n) = (wide(key), wide(name));
+    let r = unsafe { RegDeleteKeyValueW(HKEY_CURRENT_USER, k.as_ptr(), n.as_ptr()) };
+    if r == 0 || r == ERROR_FILE_NOT_FOUND {
+        Ok(())
+    } else {
+        Err(format!("Gagal menghapus HKCU\\{key}\\{name} (kode {r})"))
+    }
+}
+
 fn register(on: bool) -> Result<(), String> {
     const PROGID: &str = r"Software\Classes\PrayDF.PDF";
     const APPKEY: &str = r"Software\Classes\Applications\praydf.exe";
     const OPENWITH: &str = r"Software\Classes\.pdf\OpenWithProgids";
     const PROTO: &str = r"Software\Classes\praydf";
+    // Default apps: Capabilities + RegisteredApplications (Settings > Apps > Default apps).
+    const CAPS: &str = r"Software\PrayDF\Capabilities";
+    const CAPS_ROOT: &str = r"Software\PrayDF";
+    const REGAPP: &str = r"Software\RegisteredApplications";
     if on {
         let exe = std::env::current_exe().map_err(|e| e.to_string())?;
         let cmd = format!("\"{}\" \"%1\"", exe.display());
-        reg_set(PROGID, "", "Dokumen PDF")?;
+        reg_set(PROGID, "", "PDF Document")?;
         reg_set(&format!(r"{PROGID}\DefaultIcon"), "", &format!("\"{}\",0", exe.display()))?;
         reg_set(&format!(r"{PROGID}\shell\open\command"), "", &cmd)?;
         reg_set(OPENWITH, "PrayDF.PDF", "")?;
@@ -1154,16 +1168,24 @@ fn register(on: bool) -> Result<(), String> {
         reg_set(PROTO, "", "URL:PrayDF Protocol")?;
         reg_set(PROTO, "URL Protocol", "")?;
         reg_set(&format!(r"{PROTO}\shell\open\command"), "", &cmd)?;
+        // Capabilities: Settings > Apps > Default apps menampilkan PrayDF.
+        reg_set(CAPS, "ApplicationName", "PrayDF")?;
+        reg_set(CAPS, "ApplicationDescription", "Fast and private PDF viewer")?;
+        reg_set(CAPS, "ApplicationIcon", &format!("\"{}\",0", exe.display()))?;
+        reg_set(&format!(r"{CAPS}\FileAssociations"), ".pdf", "PrayDF.PDF")?;
+        reg_set(&format!(r"{CAPS}\URLAssociations"), "praydf", "praydf")?;
+        reg_set(REGAPP, "PrayDF", r"Software\PrayDF\Capabilities")?;
     } else {
         unsafe {
-            for k in [PROGID, APPKEY, PROTO] {
+            for k in [PROGID, APPKEY, PROTO, CAPS_ROOT] {
                 let r = RegDeleteTreeW(HKEY_CURRENT_USER, wide(k).as_ptr());
                 if r != 0 && r != ERROR_FILE_NOT_FOUND {
                     return Err(format!("Gagal menghapus HKCU\\{k} (kode {r})"));
                 }
             }
-            RegDeleteKeyValueW(HKEY_CURRENT_USER, wide(OPENWITH).as_ptr(), wide("PrayDF.PDF").as_ptr());
         }
+        reg_del_value(OPENWITH, "PrayDF.PDF")?;
+        reg_del_value(REGAPP, "PrayDF")?;
     }
     unsafe { SHChangeNotify(SHCNE_ASSOCCHANGED as _, SHCNF_IDLIST, null(), null()) };
     Ok(())

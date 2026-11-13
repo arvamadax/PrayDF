@@ -22,7 +22,7 @@
 <p align="center"><img src="docs/assets/screenshot-extension.png" alt="PrayDF browser extension showing page 47 with highlighted search matches" width="100%"></p>
 
 <a id="install"></a>
-<p align="center"><img src="docs/assets/md/readme-05.svg" alt="Install: Download PrayDF-windows-x64.zip from the latest release. Extract praydf.exe and pdfium.dll into one folder, for example %LOCALAPPDATA%\PrayDF. Run praydf.exe --register once. PrayDF then appears under Open with for PDF files and can receive files from the extension. No administrator rights are needed; --unregister removes it again. Download PrayDF-extension.zip from the same release and extract it. Browser How to load it Chrome, Edge, Brave, Opera, Vivaldi Open the extensions page, turn on Developer mode, choose Load unpacked and select the PrayDF-extension folder Firefox 128 or later" width="100%"></p>
+<p align="center"><img src="docs/assets/md/readme-05.svg" alt="Install: Download PrayDF-&lt;version&gt;-x64.msi from the latest release. Start the installer. Read the terms of use (a short summary plus the MIT licence), tick I accept the terms of use above, and press Next. Pick the install scope, then press Install: Only for me installs into %LOCALAPPDATA%\Programs\PrayDF and needs no administrator rights. For all users of this computer installs into %ProgramFiles%\PrayDF. The Install button shows a shield: Windows asks for administrator permission and the installation continues in a new, elevated window. The installer adds a PrayDF shortcut to the Start menu a" width="100%"></p>
 <p align="center"><sub><a href="https://github.com/arvamadax/PrayDF/releases/latest">latest release</a></sub></p>
 
 <a id="build-from-source"></a>
@@ -40,6 +40,7 @@ powershell -File fetch-pdfium.ps1   # downloads pdfium.dll into native/pdfium
 cargo build --release               # builds target/release/praydf.exe
 cargo test                          # runs the unit tests
 powershell -File install.ps1        # copies to %LOCALAPPDATA%\PrayDF and registers
+powershell -File installer\build-msi.ps1   # builds installer/out/PrayDF-<version>-x64.msi
 ```
 
 </details>
@@ -53,7 +54,7 @@ powershell -File install.ps1        # copies to %LOCALAPPDATA%\PrayDF and regist
 <p align="center"><img src="docs/assets/md/readme-08.svg" alt="Performance: Measured on Windows 11 with a 12-page PDF. Your numbers will vary with the machine and the document. Measurement Result Download size of the Windows app 0.97 MB for praydf.exe plus 7.5 MB for pdfium.dll Memory with one PDF open 22.5 MB working set, 7.9 MB private" width="100%"></p>
 
 <a id="privacy-and-security"></a>
-<p align="center"><img src="docs/assets/md/readme-09.svg" alt="Privacy and security: Documents are opened and rendered on your device. PrayDF only downloads a document you asked it to open, and sends nothing anywhere. The Windows app runs without administrator rights and registers itself only under HKEY_CURRENT_USER. praydf: links are validated: only http(s) URLs and absolute local .pdf paths are accepted. Network paths (\\server\share, file://host), other schemes, relative paths and control characters are refused. Found a vulnerability? Please report it privately as described in SECURITY.md." width="100%"></p>
+<p align="center"><img src="docs/assets/md/readme-09.svg" alt="Privacy and security: Documents are opened and rendered on your device. PrayDF only downloads a document you asked it to open, and sends nothing anywhere. The Windows app installs without administrator rights and then registers itself only under HKEY_CURRENT_USER; an install for all users registers under HKEY_LOCAL_MACHINE. praydf: links are validated: only http(s) URLs and absolute local .pdf paths are accepted. Network paths (\\server\share, file://host), other schemes, relative paths and control characters are refused. Found a vulnerability? Please report it privately as described in SECURI" width="100%"></p>
 <p align="center"><sub><a href="SECURITY.md">SECURITY.md</a></sub></p>
 
 <a id="project-structure"></a>
@@ -64,7 +65,7 @@ powershell -File install.ps1        # copies to %LOCALAPPDATA%\PrayDF and regist
 .
 ├── extension/   Browser extension (Manifest V3): viewer, background worker, icons
 ├── native/      Windows app in Rust: main.rs (window), doc.rs (PDFium),
-│                print.rs (printing), link.rs (praydf: links)
+│                print.rs (printing), link.rs (praydf: links), installer/ (MSI)
 ├── assets/      Logo, icon and the script that builds the icons
 ├── docs/        README source (docs/src) and rendered images
 ├── brand/       Fonts and licences used by the README images
@@ -74,7 +75,7 @@ powershell -File install.ps1        # copies to %LOCALAPPDATA%\PrayDF and regist
 </details>
 
 <a id="roadmap"></a>
-<p align="center"><img src="docs/assets/md/readme-11.svg" alt="Roadmap: Listed in Windows Default Apps, with a proper installer Signed releases without a SmartScreen warning, and a Microsoft Store listing Chrome Web Store, Edge Add-ons and Firefox Add-ons listings Word documents and text files in the Windows app Remember the last page of each file" width="100%"></p>
+<p align="center"><img src="docs/assets/md/readme-11.svg" alt="Roadmap: Signed releases without a SmartScreen warning, and a Microsoft Store listing Chrome Web Store, Edge Add-ons and Firefox Add-ons listings Word documents and text files in the Windows app Remember the last page of each file" width="100%"></p>
 
 <a id="contributing"></a>
 <p align="center"><img src="docs/assets/md/readme-12.svg" alt="Contributing: Bug reports, ideas and pull requests are welcome. Read CONTRIBUTING.md to set up the project and the Code of Conduct before joining the discussion. Open an issue to report a bug or suggest a feature." width="100%"></p>

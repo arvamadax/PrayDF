@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PrayDF - installer Windows (MSI), dibuat dengan WiX Toolset v3.
+
+  Paket "dual-purpose" (single package authoring):
+    - ALLUSERS=2 + MSIINSTALLPERUSER=1 -> per-user sebagai bawaan, tanpa admin.
+    - Dialog "PrayDFScopeDlg" menanyakan cakupan. Tombol Pasang mengisi ALLUSERS:
+      "Hanya untuk saya" -> 2 (per-user), "Untuk semua pengguna" -> 1 (per-machine,
+      folder Program Files, minta UAC; tombolnya berperisai elevasi seperti WixUI_Advanced).
+    - Seluruh dialog wizard tampil SEBELUM CostInitialize, supaya Windows Installer
+      menghitung folder (ProgramFiles64Folder -> %ProgramFiles% atau
+      %LOCALAPPDATA%\Programs) memakai ALLUSERS final.
+    - Semua entri registry memakai root HKMU: HKCU saat per-user, HKLM saat per-machine.
+
+  UpgradeCode (JANGAN pernah diubah): {A1DDDA63-3DFD-45B8-A466-9DADD546A5FF}
+  ProductCode dihitung otomatis oleh build-msi.ps1 dari versi di native/Cargo.toml.
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <Product Id="$(var.ProductCode)"
+           Name="PrayDF"
+           Language="1033"
+           Version="$(var.ProductVersion)"
+           Manufacturer="arvamadax"
+           UpgradeCode="{A1DDDA63-3DFD-45B8-A466-9DADD546A5FF}">
+
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallPrivileges="limited"
+             Description="PrayDF - fast and private PDF viewer"
+             Platform="x64"
+             Languages="1033" />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of PrayDF is already installed. Uninstall it first, then run this installer again." />
+
+    <!-- Cakupan pemasangan: dual-purpose (per-user bawaan, per-machine bila dipilih). -->
+    <Property Id="ALLUSERS" Value="2" Secure="yes" />
+    <Property Id="MSIINSTALLPERUSER" Value="1" Secure="yes" />
+    <Property Id="PRAYDF_SCOPE" Value="PerUser" />
+
+    <!-- Tampilan di Settings > Apps > Default apps.
+         ARPPRODUCTICON adalah foreign key ke tabel Icon (bukan nama berkas). -->
+    <Property Id="ARPPRODUCTICON" Value="praydfIcon.exe" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/arvamadax/PrayDF" />
+
+    <!-- Last page: "Open Default apps settings" checkbox (ticked by default). -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Open Default apps settings" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+
+    <!-- Syarat penggunaan + lisensi MIT (RTF dibuat build-msi.ps1) dan gambar installer (make-art.py). -->
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" Overridable="yes" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.ArtDir)\banner.bmp" Overridable="yes" />
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.ArtDir)\dialog.bmp" Overridable="yes" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="PrayDF">
+          <Directory Id="LICENSEFOLDER" Name="licenses" />
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder" />
+    </Directory>
+
+    <!--
+      Berkas utama. KeyPath memakai berkas (praydf.exe) supaya Windows Installer
+      menemukan folder yang benar saat uninstall/repair.
+    -->
+    <Component Id="AppFiles" Directory="INSTALLFOLDER" Guid="{998BBA4F-24FC-4764-A238-E7BEC3F37080}" Win64="yes">
+      <File Id="praydf.exe" Name="praydf.exe" Source="$(var.PraydfExe)" KeyPath="yes" />
+      <File Id="pdfium.dll" Name="pdfium.dll" Source="$(var.PdfiumDll)" />
+      <File Id="praydf_license" Name="LICENSE" Source="$(var.RepoLicense)" />
+    </Component>
+
+    <!--
+      Pendaftaran registry (ProgID .pdf, Open with, protocol praydf:, Capabilities).
+      Root HKMU: HKCU saat per-user, HKLM saat per-machine.
+      KeyPath memakai entri registry HKMU supaya konsisten di kedua konteks.
+    -->
+    <Component Id="RegistryAssoc" Directory="INSTALLFOLDER" Guid="{3239766E-8FF0-4AD8-8313-04D23F4D4E55}" Win64="yes">
+
+      <!-- ProgID .pdf -->
+      <RegistryValue Root="HKMU" Key="Software\Classes\PrayDF.PDF" Value="PDF Document" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\Classes\PrayDF.PDF\DefaultIcon" Value="&quot;[INSTALLFOLDER]praydf.exe&quot;,0" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\Classes\PrayDF.PDF\shell\open\command" Value="&quot;[INSTALLFOLDER]praydf.exe&quot; &quot;%1&quot;" Type="string" />
+
+      <!-- "Open with" untuk .pdf -->
+      <RegistryValue Root="HKMU" Key="Software\Classes\.pdf\OpenWithProgids" Name="PrayDF.PDF" Value="" Type="string" />
+
+      <!-- Aplikasi terdaftar (Open with, SupportedTypes) -->
+      <RegistryValue Root="HKMU" Key="Software\Classes\Applications\praydf.exe\shell\open\command" Value="&quot;[INSTALLFOLDER]praydf.exe&quot; &quot;%1&quot;" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\Classes\Applications\praydf.exe\SupportedTypes" Name=".pdf" Value="" Type="string" />
+
+      <!-- Protocol praydf: -->
+      <RegistryValue Root="HKMU" Key="Software\Classes\praydf" Value="URL:PrayDF Protocol" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\Classes\praydf" Name="URL Protocol" Value="" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\Classes\praydf\shell\open\command" Value="&quot;[INSTALLFOLDER]praydf.exe&quot; &quot;%1&quot;" Type="string" />
+
+      <!-- Capabilities (Settings > Apps > Default apps) -->
+      <RegistryValue Root="HKMU" Key="Software\PrayDF\Capabilities" Name="ApplicationDescription" Value="Fast and private PDF viewer" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\PrayDF\Capabilities" Name="ApplicationIcon" Value="&quot;[INSTALLFOLDER]praydf.exe&quot;,0" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\PrayDF\Capabilities\FileAssociations" Name=".pdf" Value="PrayDF.PDF" Type="string" />
+      <RegistryValue Root="HKMU" Key="Software\PrayDF\Capabilities\URLAssociations" Name="praydf" Value="praydf" Type="string" />
+
+      <!-- Aplikasi terdaftar -->
+      <RegistryValue Root="HKMU" Key="Software\RegisteredApplications" Name="PrayDF" Value="Software\PrayDF\Capabilities" Type="string" />
+
+      <!-- KeyPath komponen (HKMU: ikut HKCU/HKLM sesuai konteks). -->
+      <RegistryValue Root="HKMU" Key="Software\PrayDF\Capabilities" Name="ApplicationName" Value="PrayDF" Type="string" KeyPath="yes" />
+
+    </Component>
+
+    <!-- Lisensi PDFium dan dependensi pihak ketiga. -->
+    <Component Id="PdfiumLicenses" Directory="LICENSEFOLDER" Guid="{F0678DD4-F7C3-4858-849C-3FF6ED6E78D2}" Win64="yes">
+      <File Id="pdfium_license" Name="PDFium-LICENSE.txt" Source="$(var.PdfiumLicense)" KeyPath="yes" />
+      <File Id="lic_abseil" Name="abseil.txt" Source="$(var.LicenseDir)\abseil.txt" />
+      <File Id="lic_agg23" Name="agg23.txt" Source="$(var.LicenseDir)\agg23.txt" />
+      <File Id="lic_dragonbox_apache2" Name="dragonbox-Apache2-LLVM.txt" Source="$(var.LicenseDir)\dragonbox-Apache2-LLVM.txt" />
+      <File Id="lic_dragonbox_boost" Name="dragonbox-Boost.txt" Source="$(var.LicenseDir)\dragonbox-Boost.txt" />
+      <File Id="lic_fast_float" Name="fast_float.txt" Source="$(var.LicenseDir)\fast_float.txt" />
+      <File Id="lic_freetype" Name="freetype.txt" Source="$(var.LicenseDir)\freetype.txt" />
+      <File Id="lic_harfbuzz" Name="harfbuzz.txt" Source="$(var.LicenseDir)\harfbuzz.txt" />
+      <File Id="lic_highway" Name="highway.txt" Source="$(var.LicenseDir)\highway.txt" />
+      <File Id="lic_icu" Name="icu.txt" Source="$(var.LicenseDir)\icu.txt" />
+      <File Id="lic_lcms" Name="lcms.txt" Source="$(var.LicenseDir)\lcms.txt" />
+      <File Id="lic_libjpeg_ijg" Name="libjpeg_turbo.ijg" Source="$(var.LicenseDir)\libjpeg_turbo.ijg" />
+      <File Id="lic_libjpeg_md" Name="libjpeg_turbo.md" Source="$(var.LicenseDir)\libjpeg_turbo.md" />
+      <File Id="lic_libopenjpeg" Name="libopenjpeg.txt" Source="$(var.LicenseDir)\libopenjpeg.txt" />
+      <File Id="lic_libpng" Name="libpng.txt" Source="$(var.LicenseDir)\libpng.txt" />
+      <File Id="lic_llvm_libc" Name="llvm-libc.txt" Source="$(var.LicenseDir)\llvm-libc.txt" />
+      <File Id="lic_pdfium" Name="pdfium.txt" Source="$(var.LicenseDir)\pdfium.txt" />
+      <File Id="lic_simdutf" Name="simdutf.txt" Source="$(var.LicenseDir)\simdutf.txt" />
+      <File Id="lic_zlib" Name="zlib.txt" Source="$(var.LicenseDir)\zlib.txt" />
+    </Component>
+
+    <!--
+      Start Menu shortcut. ProgramMenuFolder follows ALLUSERS: the per-user Start Menu for
+      ALLUSERS=2 and the shared one for ALLUSERS=1, so one component serves both scopes.
+      (CommonProgramsFolder is NOT a Windows Installer folder: it resolved to C:\ and the
+      per-machine shortcut ended up in the drive root.)
+    -->
+    <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="{DDB0402C-E1D7-4BEB-B0DA-DEB14FB67A9B}" Win64="yes">
+      <Shortcut Id="PrayDFShortcut"
+               Name="PrayDF"
+               Description="PrayDF - fast and private PDF viewer"
+               Target="[INSTALLFOLDER]praydf.exe"
+               WorkingDirectory="INSTALLFOLDER"
+               Icon="praydfIcon.exe"
+               IconIndex="0">
+        <Icon Id="praydfIcon.exe" SourceFile="$(var.PraydfExe)" />
+      </Shortcut>
+      <RegistryValue Root="HKMU" Key="Software\PrayDF\StartMenu" Name="Path" Value="[INSTALLFOLDER]" Type="string" KeyPath="yes" />
+    </Component>
+    <Feature Id="PrayDFApp" Title="PrayDF" Level="1" Description="Fast and private PDF viewer" Display="expand">
+      <ComponentRef Id="AppFiles" />
+      <ComponentRef Id="RegistryAssoc" />
+      <ComponentRef Id="PdfiumLicenses" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+
+    <!--
+      Wizard flow. Every dialog is shown BEFORE CostInitialize so Windows Installer computes
+      the folders (ProgramFiles64Folder -> %ProgramFiles% or %LOCALAPPDATA%\Programs)
+      with the final ALLUSERS / MSIINSTALLPERUSER values:
+        Welcome -> Terms of use -> Scope + Install -> Progress -> Finish
+      The stock WixUI dialogs (progress, finish, cancel, errors, maintenance) are used as they are.
+    -->
+    <UI Id="PrayDFUI">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+      <Property Id="WixUI_Mode" Value="Minimal" />
+      <Property Id="ARPNOMODIFY" Value="1" />
+
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+      <DialogRef Id="MaintenanceWelcomeDlg" />
+      <DialogRef Id="MaintenanceTypeDlg" />
+      <DialogRef Id="VerifyReadyDlg" />
+
+      <!-- 1. Welcome -->
+      <Dialog Id="PrayDFWelcomeDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUI_Bmp_Dialog" />
+        <Control Id="Title" Type="Text" X="180" Y="20" Width="180" Height="60" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Bigger}Welcome to [ProductName] Setup" />
+        <Control Id="Description" Type="Text" X="180" Y="85" Width="180" Height="130" Transparent="yes" NoPrefix="yes" Text="[ProductName] is a fast, lightweight and private PDF viewer. Your documents are opened on this computer and are never sent anywhere.&#13;&#10;&#13;&#10;Click Next to continue." />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
+          <Publish Event="NewDialog" Value="PrayDFLicenseDlg">1</Publish>
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+
+      <!-- 2. Terms of use (terms.txt + LICENSE, turned into RTF by build-msi.ps1) -->
+      <Dialog Id="PrayDFLicenseDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="300" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Terms of use" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="300" Height="15" Transparent="yes" NoPrefix="yes" Text="Read the terms below, then accept them to continue." />
+        <Control Id="LicenseText" Type="ScrollableText" X="20" Y="55" Width="330" Height="145" Sunken="yes" TabSkip="no">
+          <Text SourceFile="!(wix.WixUILicenseRtf)" />
+        </Control>
+        <Control Id="Accept" Type="CheckBox" X="20" Y="208" Width="330" Height="18" CheckBoxValue="1" Property="PRAYDF_TERMS_ACCEPTED" Text="I &amp;accept the terms of use above" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+          <Publish Event="NewDialog" Value="PrayDFWelcomeDlg">1</Publish>
+        </Control>
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
+          <Publish Event="NewDialog" Value="PrayDFScopeDlg">PRAYDF_TERMS_ACCEPTED = 1</Publish>
+          <Condition Action="disable"><![CDATA[PRAYDF_TERMS_ACCEPTED <> 1]]></Condition>
+          <Condition Action="enable">PRAYDF_TERMS_ACCEPTED = 1</Condition>
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+
+      <!--
+        3. Install scope. The Install button shows the UAC shield for "all users" (WixUI_Advanced pattern).
+           Per-user:    ALLUSERS=2, MSIINSTALLPERUSER=1  -> %LOCALAPPDATA%\Programs\PrayDF, HKCU
+           Per-machine: ALLUSERS=1, MSIINSTALLPERUSER cleared ({}) -> %ProgramFiles%\PrayDF, HKLM
+        MSIINSTALLPERUSER must be cleared for per-machine, otherwise Windows Installer still
+        redirects the folders to %LOCALAPPDATA%\Programs while registering under HKLM.
+      -->
+      <Dialog Id="PrayDFScopeDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="300" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Who is this install for?" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="300" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose the install scope, then click Install." />
+        <Control Id="ScopeGroup" Type="RadioButtonGroup" X="20" Y="60" Width="330" Height="70" Property="PRAYDF_SCOPE">
+          <RadioButtonGroup Property="PRAYDF_SCOPE">
+            <RadioButton Value="PerUser" X="0" Y="0" Width="330" Height="18" Text="Only for me (recommended, no administrator rights needed)" />
+            <RadioButton Value="PerMachine" X="0" Y="40" Width="330" Height="18" Text="For all users of this computer (needs administrator permission)" />
+          </RadioButtonGroup>
+        </Control>
+        <Control Id="InfoUser" Type="Text" X="38" Y="78" Width="312" Height="20" Transparent="yes" NoPrefix="yes" Text="Folder: %LOCALAPPDATA%\Programs\PrayDF">
+          <Condition Action="show">PRAYDF_SCOPE = "PerUser"</Condition>
+          <Condition Action="hide">PRAYDF_SCOPE &lt;&gt; "PerUser"</Condition>
+        </Control>
+        <Control Id="InfoMachine" Type="Text" X="38" Y="118" Width="312" Height="20" Transparent="yes" NoPrefix="yes" Text="Folder: %ProgramFiles%\PrayDF. Windows will ask for administrator permission.">
+          <Condition Action="show">PRAYDF_SCOPE = "PerMachine"</Condition>
+          <Condition Action="hide">PRAYDF_SCOPE &lt;&gt; "PerMachine"</Condition>
+        </Control>
+        <Control Id="Note" Type="Text" X="20" Y="160" Width="330" Height="45" Transparent="yes" NoPrefix="yes" Text="After installing, open Settings &gt; Apps &gt; Default apps to make PrayDF your PDF viewer. Windows leaves that choice to you." />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+          <Publish Event="NewDialog" Value="PrayDFLicenseDlg">1</Publish>
+        </Control>
+        <!--
+          Per-machine: when already elevated (Privileged) just switch to ALLUSERS=1 and continue.
+          Otherwise this non-elevated, LUA-marked session cannot install for all users (error 1925),
+          so relaunch msiexec through "runas" (real UAC prompt) with the per-machine properties and
+          leave this session. Each event is guarded by the scope so the hidden twin button can
+          never fire (Enter / Alt+I still reach hidden controls unless they are disabled).
+        -->
+        <Control Id="InstallShield" Type="PushButton" ElevationShield="yes" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Install">
+          <Condition Action="show">PRAYDF_SCOPE = "PerMachine"</Condition>
+          <Condition Action="hide">PRAYDF_SCOPE &lt;&gt; "PerMachine"</Condition>
+          <Condition Action="enable">PRAYDF_SCOPE = "PerMachine"</Condition>
+          <Condition Action="disable">PRAYDF_SCOPE &lt;&gt; "PerMachine"</Condition>
+          <Publish Property="ALLUSERS" Value="1" Order="1">PRAYDF_SCOPE = "PerMachine" AND Privileged</Publish>
+          <Publish Property="MSIINSTALLPERUSER" Value="{}" Order="2">PRAYDF_SCOPE = "PerMachine" AND Privileged</Publish>
+          <Publish Event="EndDialog" Value="Return" Order="3">PRAYDF_SCOPE = "PerMachine" AND Privileged</Publish>
+          <Publish Event="DoAction" Value="RelaunchElevated" Order="4">PRAYDF_SCOPE = "PerMachine" AND NOT Privileged</Publish>
+          <Publish Event="EndDialog" Value="Exit" Order="5">PRAYDF_SCOPE = "PerMachine" AND NOT Privileged</Publish>
+        </Control>
+        <Control Id="Install" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Install">
+          <Condition Action="show">PRAYDF_SCOPE = "PerUser"</Condition>
+          <Condition Action="hide">PRAYDF_SCOPE &lt;&gt; "PerUser"</Condition>
+          <Condition Action="enable">PRAYDF_SCOPE = "PerUser"</Condition>
+          <Condition Action="disable">PRAYDF_SCOPE &lt;&gt; "PerUser"</Condition>
+          <Publish Property="ALLUSERS" Value="2" Order="1">PRAYDF_SCOPE = "PerUser"</Publish>
+          <Publish Property="MSIINSTALLPERUSER" Value="1" Order="2">PRAYDF_SCOPE = "PerUser"</Publish>
+          <Publish Event="EndDialog" Value="Return" Order="3">PRAYDF_SCOPE = "PerUser"</Publish>
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+
+      <!-- Stock WixUI dialogs for the finish page and maintenance (Add/Remove). -->
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+
+      <!-- Finish page: open Settings > Default apps for the chosen scope. -->
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="OpenDefaultApps" Order="1">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed</Publish>
+
+      <InstallUISequence>
+        <Show Dialog="PrayDFWelcomeDlg" Before="CostInitialize">NOT Installed</Show>
+        <!-- ALLUSERS is final after the scope dialog: pick the matching ms-settings address. -->
+        <Custom Action="SetDefaultAppsUrlUser" After="PrayDFWelcomeDlg">NOT Installed AND NOT ALLUSERS=1</Custom>
+        <Custom Action="SetDefaultAppsUrlMachine" After="SetDefaultAppsUrlUser">NOT Installed AND ALLUSERS=1</Custom>
+      </InstallUISequence>
+
+      <UIRef Id="WixUI_Common" />
+    </UI>
+
+    <CustomAction Id="SetDefaultAppsUrlUser" Property="PRAYDF_DEFAULT_APPS_URL" Value="ms-settings:defaultapps?registeredAppUser=PrayDF" Execute="immediate" />
+    <CustomAction Id="SetDefaultAppsUrlMachine" Property="PRAYDF_DEFAULT_APPS_URL" Value="ms-settings:defaultapps?registeredAppMachine=PrayDF" Execute="immediate" />
+
+    <!-- Relaunch this MSI elevated (UAC) for an all-users install; basic UI, terms already accepted. -->
+    <CustomAction Id="RelaunchElevated" Directory="TARGETDIR" Execute="immediate" Return="ignore"
+                  ExeCommand="powershell.exe -NoP -W Hidden -C &quot;Start-Process msiexec -Verb RunAs -Args '/i \&quot;[OriginalDatabase]\&quot; ALLUSERS=1 MSIINSTALLPERUSER=\&quot;\&quot; PRAYDF_TERMS_ACCEPTED=1 /qb /l*v \&quot;[TempFolder]PrayDF-setup.log\&quot;'&quot;" />
+
+    <!-- Open ms-settings:defaultapps (registeredAppUser / registeredAppMachine). -->
+    <CustomAction Id="OpenDefaultApps" Directory="TARGETDIR" Execute="immediate" Return="ignore"
+                  ExeCommand='[SystemFolder]rundll32.exe url.dll,FileProtocolHandler "[PRAYDF_DEFAULT_APPS_URL]"' />
+
+  </Product>
+</Wix>

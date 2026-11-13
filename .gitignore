@@ -2,4 +2,6 @@ node_modules/
 extension/lib/
 native/target/
 native/pdfium/
+native/installer/out/
 promo/
+prompts/

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Overrides two stock WixUI strings. The "For all users" choice hands the install over to a new,
+  elevated setup window and then closes this one through the same "setup ended" dialog that Cancel
+  uses, so its text must read correctly for both cases.
+-->
+<WixLocalization Culture="en-us" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="UserExitTitle" Overridable="yes">{\WixUI_Font_Bigger}[ProductName] Setup has closed</String>
+  <String Id="UserExitDescription1" Overridable="yes">This setup window has finished and your system was not changed by it. If you chose to install for all users, the installation continues in the administrator window that Windows opened. Click Finish to close this window.</String>
+</WixLocalization>

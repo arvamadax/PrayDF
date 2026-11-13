@@ -1,0 +1,36 @@
+#PrayDF Terms of Use
+Please read these terms before installing PrayDF. By ticking the acceptance box and continuing, you agree to them.
+
+#1. About PrayDF
+PrayDF is a lightweight, open-source PDF viewer for Windows developed by arvamadax. The source code is at https://github.com/arvamadax/PrayDF.
+
+#2. Licence
+PrayDF is released under the MIT licence. You may use, copy, modify, merge, publish and distribute PrayDF for personal or commercial purposes, as long as the copyright notice and the MIT licence text at the bottom of this document are included.
+
+#3. Privacy
+- Documents are opened and rendered on your device. PrayDF does not upload documents, collect telemetry or ask for an account.
+- PrayDF only downloads a file when you ask it to, that is when you open an http(s) or praydf: link to a PDF. The file is stored temporarily on your device so it can be opened.
+- PrayDF checks every praydf: link before opening anything. Only http(s) URLs and absolute local PDF paths are accepted.
+
+#4. Changes to your computer
+This installer does the following:
+- Copies praydf.exe, pdfium.dll, the licence text and the licences of third-party components to the install folder.
+- Adds a PrayDF shortcut to the Start menu.
+- Registers PrayDF with Windows as an app for .pdf files (Open with) and as the handler for praydf: links, and lists it under Settings > Apps > Default apps.
+- An "Only for me" install writes only to folders and registry keys owned by your account (no administrator rights). A "For all users" install writes to Program Files and to the machine-wide registry, and asks for administrator permission.
+
+PrayDF does not silently replace your default PDF app. Windows protects that choice, so you set PrayDF as the default yourself on the Default apps page. When you uninstall PrayDF from Settings > Apps, all of the files and registry entries above are removed too.
+
+#5. Third-party components
+PrayDF uses PDFium (BSD licence, The PDFium Authors) through the pdfium-binaries build by Benoit Blanchon (MIT licence), together with several bundled libraries such as FreeType, HarfBuzz, ICU, libpng, libjpeg-turbo, OpenJPEG, Little CMS, zlib and Abseil. The licence text of each component is in the licenses subfolder of the install folder.
+
+#6. No warranty
+PrayDF is provided "as is", without warranty of any kind, express or implied, including the warranties of merchantability, fitness for a particular purpose and non-infringement. The authors and contributors are not liable for any claim, loss or damage, including loss of or damage to documents, arising from the use of PrayDF. Keep backups of your important documents.
+
+#7. Security and contact
+Found a security vulnerability? Please report it privately as described in SECURITY.md in the project repository. For other questions and bug reports, use the Issues page at https://github.com/arvamadax/PrayDF.
+
+#8. Changes to these terms
+These terms may change in a later release. The terms that apply are the ones shipped with the PrayDF version you install.
+
+#MIT licence text

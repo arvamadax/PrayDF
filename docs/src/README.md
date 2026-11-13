@@ -40,9 +40,16 @@ The Windows app (top) and the browser extension (bottom) searching the same 120-
 
 ### Windows app (Windows 10 and 11, 64-bit)
 
-1. Download `PrayDF-windows-x64.zip` from the [latest release](https://github.com/arvamadax/PrayDF/releases/latest).
-2. Extract `praydf.exe` and `pdfium.dll` into one folder, for example `%LOCALAPPDATA%\PrayDF`.
-3. Run `praydf.exe --register` once. PrayDF then appears under **Open with** for PDF files and can receive files from the extension. No administrator rights are needed; `--unregister` removes it again.
+1. Download `PrayDF-<version>-x64.msi` from the [latest release](https://github.com/arvamadax/PrayDF/releases/latest).
+2. Start the installer. Read the terms of use (a short summary plus the MIT licence), tick **I accept the terms of use above**, and press **Next**.
+3. Pick the install scope, then press **Install**:
+   - **Only for me** installs into `%LOCALAPPDATA%\Programs\PrayDF` and needs no administrator rights.
+   - **For all users of this computer** installs into `%ProgramFiles%\PrayDF`. The Install button shows a shield: Windows asks for administrator permission and the installation continues in a new, elevated window.
+4. The installer adds a **PrayDF** shortcut to the Start menu and registers PrayDF for PDF files. On the last screen of a per-user install, leave **Open Default apps settings** ticked to jump straight to the Default apps page in Windows Settings, where you can pick PrayDF as the app for `.pdf`. Windows keeps that choice in your hands: the installer never sets a default silently.
+
+> The installer is not signed yet, so Windows SmartScreen may warn that it protected your PC. Choose **More info → Run anyway** when you trust the download.
+
+**Portable alternative.** `PrayDF-windows-x64.zip` contains `praydf.exe` and `pdfium.dll`. Extract both into one folder and run `praydf.exe --register` once: PrayDF then appears under **Open with** for PDF files and can receive files from the extension, all without administrator rights. Run `praydf.exe --unregister` to remove it again.
 
 ### Browser extension
 
@@ -70,6 +77,7 @@ powershell -File fetch-pdfium.ps1   # downloads pdfium.dll into native/pdfium
 cargo build --release               # builds target/release/praydf.exe
 cargo test                          # runs the unit tests
 powershell -File install.ps1        # copies to %LOCALAPPDATA%\PrayDF and registers
+powershell -File installer\build-msi.ps1   # builds installer/out/PrayDF-<version>-x64.msi
 ```
 
 ## How it works
@@ -91,7 +99,7 @@ Measured on Windows 11 with a 12-page PDF. Your numbers will vary with the machi
 ## Privacy and security
 
 - Documents are opened and rendered on your device. PrayDF only downloads a document you asked it to open, and sends nothing anywhere.
-- The Windows app runs without administrator rights and registers itself only under `HKEY_CURRENT_USER`.
+- The Windows app installs without administrator rights and then registers itself only under `HKEY_CURRENT_USER`; an install for all users registers under `HKEY_LOCAL_MACHINE`.
 - `praydf:` links are validated: only `http(s)` URLs and absolute local `.pdf` paths are accepted. Network paths (`\\server\share`, `file://host`), other schemes, relative paths and control characters are refused.
 - Found a vulnerability? Please report it privately as described in [SECURITY.md](SECURITY.md).
 
@@ -101,7 +109,7 @@ Measured on Windows 11 with a 12-page PDF. Your numbers will vary with the machi
 .
 ├── extension/   Browser extension (Manifest V3): viewer, background worker, icons
 ├── native/      Windows app in Rust: main.rs (window), doc.rs (PDFium),
-│                print.rs (printing), link.rs (praydf: links)
+│                print.rs (printing), link.rs (praydf: links), installer/ (MSI)
 ├── assets/      Logo, icon and the script that builds the icons
 ├── docs/        README source (docs/src) and rendered images
 ├── brand/       Fonts and licences used by the README images
@@ -110,7 +118,6 @@ Measured on Windows 11 with a 12-page PDF. Your numbers will vary with the machi
 
 ## Roadmap
 
-- Listed in Windows Default Apps, with a proper installer
 - Signed releases without a SmartScreen warning, and a Microsoft Store listing
 - Chrome Web Store, Edge Add-ons and Firefox Add-ons listings
 - Word documents and text files in the Windows app

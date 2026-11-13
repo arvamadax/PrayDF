@@ -5,9 +5,17 @@ All notable changes to PrayDF are recorded here. The format follows [Keep a Chan
 ## [Unreleased]
 
 ### Added
+- Windows installer `PrayDF-<version>-x64.msi`: choose the install scope (per-user without administrator rights, or per-machine for all users), get a Start Menu shortcut, and register PrayDF in Windows Default apps.
+- The installer is in English and walks through Welcome, terms of use (summary plus the MIT licence, with an accept checkbox), install scope, then progress. It carries PrayDF branding on its side panel and banner.
+- "For all users" installs work: the Install button relaunches the installer elevated (UAC) because the package is marked for limited-privilege per-user installs. The Start Menu shortcut now goes to the shared Start Menu instead of the drive root.
+- The installer leaves an "Open Default apps settings" checkbox on its last page, which opens the Default apps page in Windows Settings so you can pick PrayDF for `.pdf` yourself.
+- The Windows app now registers itself in Settings > Apps > Default apps (`praydf.exe --register` and `--unregister`).
 - Firefox 128+ support for the browser extension, alongside Chrome, Edge, Brave, Opera and Vivaldi.
 - A branded README with screenshots, an architecture overview and measured performance.
 - Contributing guide, security policy, code of conduct, and issue and pull request templates.
+
+### Changed
+- The README now installs the Windows app with the MSI; the zip stays available as a portable alternative.
 
 ## [0.1.0] - 2026-11-13
 
